@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Queue Finish Time Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 20% 20%, #0b1324 0%, #050914 50%, #010510 100%);
+      --panel: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.12);
+      --glow: 0 18px 48px rgba(0, 0, 0, 0.36);
+      --accent: #f7ab1b;
+      --accent-2: #3dd8c2;
+      --text: #e5e7eb;
+      --muted: #9fb0c9;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 18px;
+    }
+
+    .shell {
+      width: min(1100px, 100%);
+      background: linear-gradient(140deg, rgba(61, 216, 194, 0.08), rgba(247, 171, 27, 0.12));
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--glow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 12px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.4px;
+    }
+
+    .tagline { color: var(--muted); margin-top: 4px; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #ef4444;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--glow);
+    }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+    input, button, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    input:focus { outline: 1px solid var(--accent-2); }
+
+    button {
+      cursor: pointer;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      color: #0c0f1a;
+      font-weight: 700;
+      border: none;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+      transition: transform 0.08s ease, box-shadow 0.12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0,0,0,0.42); }
+    button:active { transform: translateY(0); }
+
+    .stack { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .stat-label { color: var(--muted); font-size: 12px; letter-spacing: 0.2px; }
+    .stat-value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+    .stat-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    .spark {
+      position: relative;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 12px;
+      border: 1px solid var(--border);
+    }
+    .spark-fill {
+      position: absolute;
+      inset: 0;
+      width: 0;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+
+    .helper { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .muted { color: var(--muted); }
+    .right { text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="hero">
+      <div>
+        <h1>Queue Finish Time Calculator</h1>
+        <div class="tagline">Figure out how many people you can serve and the exact time the last person is done.</div>
+      </div>
+      <div class="pill">Live clock: <span id="liveClock">--:--:--</span></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <label for="startTime">Start time</label>
+        <div class="stack">
+          <input id="startTime" type="time" step="60" aria-label="Start time">
+          <button id="nowBtn" style="width:auto; padding: 12px 14px;">Use now</button>
+        </div>
+        <p class="helper">Pick the time of day you’ll start. Date isn’t needed.</p>
+      </div>
+
+      <div class="card">
+        <label for="peopleCount">People in queue</label>
+        <input id="peopleCount" type="number" min="0" step="1" value="20" aria-label="People in queue">
+        <p class="helper">Whole number of people waiting.</p>
+      </div>
+
+      <div class="card">
+        <label for="minutesPer">Minutes per person</label>
+        <input id="minutesPer" type="number" min="0" step="0.1" value="6" aria-label="Minutes per person">
+        <p class="helper">Include any reset/setup time between people.</p>
+      </div>
+
+      <div class="card">
+        <label for="buffer">Extra buffer (minutes)</label>
+        <input id="buffer" type="number" min="0" step="1" value="0" aria-label="Buffer minutes">
+        <p class="helper">One-time padding for breaks/cleanup. Added to the total duration.</p>
+      </div>
+
+      <div class="card">
+        <label for="targetEnd">Target end time (optional)</label>
+        <input id="targetEnd" type="time" step="60" aria-label="Target end time">
+        <p class="helper">Pick a time of day to stop. We assume the same day.</p>
+      </div>
+
+      <div class="card">
+        <label>Needed pace (mins per person)</label>
+        <div class="stat-value" id="paceNeeded">—</div>
+        <p class="helper" id="paceSub">Enter people + target time to see the required pace.</p>
+      </div>
+
+      <div class="card">
+        <label>Needed pace (mm:ss)</label>
+        <div class="stat-value" id="paceClock">—</div>
+        <p class="helper" id="paceClockSub">Same pace shown as minutes and seconds.</p>
+      </div>
+
+      <div class="card" style="display:flex; flex-direction:column; gap:10px; justify-content:flex-end;">
+        <button id="calcBtn">Calculate</button>
+        <p class="helper right">Updates instantly as you type.</p>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-label">Last person finishes</div>
+        <div class="stat-value" id="finishTime">—</div>
+        <div class="stat-sub" id="finishSub">Waiting for input</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total run time</div>
+        <div class="stat-value" id="totalDuration">—</div>
+        <div class="stat-sub" id="durationSub"></div>
+        <div class="spark"><div class="spark-fill" id="sparkFill"></div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">People done by target</div>
+        <div class="stat-value" id="peopleByTarget">—</div>
+        <div class="stat-sub" id="targetSub">Set a target end time to see capacity.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const startInput = document.getElementById('startTime');
+    const nowBtn = document.getElementById('nowBtn');
+    const peopleInput = document.getElementById('peopleCount');
+    const minutesInput = document.getElementById('minutesPer');
+    const bufferInput = document.getElementById('buffer');
+    const targetInput = document.getElementById('targetEnd');
+    const calcBtn = document.getElementById('calcBtn');
+
+    const finishTimeEl = document.getElementById('finishTime');
+    const finishSubEl = document.getElementById('finishSub');
+    const totalDurationEl = document.getElementById('totalDuration');
+    const durationSubEl = document.getElementById('durationSub');
+    const peopleByTargetEl = document.getElementById('peopleByTarget');
+    const targetSubEl = document.getElementById('targetSub');
+    const sparkFillEl = document.getElementById('sparkFill');
+    const paceNeededEl = document.getElementById('paceNeeded');
+    const paceSubEl = document.getElementById('paceSub');
+    const paceClockEl = document.getElementById('paceClock');
+    const paceClockSubEl = document.getElementById('paceClockSub');
+    const liveClockEl = document.getElementById('liveClock');
+
+    function toTimeValue(date) {
+      return date.toTimeString().slice(0, 5);
+    }
+    function dateFromTime(timeStr, anchor = new Date()) {
+      if (!timeStr) return new Date(NaN);
+      const [h, m] = timeStr.split(':').map(Number);
+      const d = new Date(anchor);
+      d.setHours(h || 0, m || 0, 0, 0);
+      return d;
+    }
+
+    function formatDateTime(date) {
+      return date.toLocaleString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+    function formatTime(date) {
+      return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function formatDuration(mins) {
+      if (!isFinite(mins) || mins < 0) return '—';
+      const hours = Math.floor(mins / 60);
+      const minutes = Math.round(mins % 60);
+      if (hours === 0) return `${minutes} min`;
+      if (minutes === 0) return `${hours} hr${hours === 1 ? '' : 's'}`;
+      return `${hours} hr${hours === 1 ? '' : 's'} ${minutes} min`;
+    }
+    function formatClock(mins) {
+      if (!isFinite(mins) || mins < 0) return '—';
+      const totalSeconds = Math.round(mins * 60);
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+    function updateLiveClock() {
+      const now = new Date();
+      if (liveClockEl) {
+        liveClockEl.textContent = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      // Refresh relative calculations (e.g., "in about X") as time moves
+      updateCalculations();
+    }
+
+    function updateCalculations() {
+      const people = Math.max(0, Math.floor(Number(peopleInput.value) || 0));
+      const minutesPer = Math.max(0, Number(minutesInput.value) || 0);
+      const buffer = Math.max(0, Number(bufferInput.value) || 0);
+      const start = dateFromTime(startInput.value, new Date());
+      const validStart = !isNaN(start.getTime());
+      // --- finish time + total duration --- //
+      if (validStart && minutesPer > 0 && people > 0) {
+        const totalMinutes = people * minutesPer + buffer;
+        const finish = new Date(start.getTime() + totalMinutes * 60_000);
+
+        finishTimeEl.textContent = formatTime(finish);
+        const minsFromNow = Math.round((finish.getTime() - Date.now()) / 60000);
+        const relative = minsFromNow >= 0 ? `in about ${formatDuration(minsFromNow)}` : `${formatDuration(Math.abs(minsFromNow))} ago`;
+        finishSubEl.textContent = `${people} people × ${minutesPer} min each + ${buffer} min buffer → ${relative}`;
+
+        totalDurationEl.textContent = formatDuration(totalMinutes);
+        durationSubEl.textContent = `${(totalMinutes / 60).toFixed(2)} hours total`;
+
+        const pct = Math.min(100, (totalMinutes / (12 * 60)) * 100);
+        sparkFillEl.style.width = `${pct}%`;
+      } else {
+        finishTimeEl.textContent = '—';
+        finishSubEl.textContent = !validStart ? 'Pick a start time' : people === 0 ? 'Add at least one person' : 'Enter minutes per person';
+        totalDurationEl.textContent = '—';
+        durationSubEl.textContent = '';
+        sparkFillEl.style.width = '0%';
+      }
+
+      // --- capacity by target --- //
+      if (targetInput.value) {
+        const target = dateFromTime(targetInput.value, validStart ? start : new Date());
+        if (!validStart) {
+          peopleByTargetEl.textContent = '—';
+          targetSubEl.textContent = 'Pick a start time first.';
+        } else if (!isNaN(target.getTime()) && target > start && minutesPer > 0) {
+          const availableMinutes = (target.getTime() - start.getTime()) / 60000 - buffer;
+          const possible = Math.max(0, Math.floor(availableMinutes / minutesPer));
+          peopleByTargetEl.textContent = possible.toLocaleString();
+          const leftover = availableMinutes - possible * minutesPer;
+          const slack = leftover > 0 ? `${Math.round(leftover)} min spare` : 'No slack time';
+          targetSubEl.textContent = `If you stop at ${formatDateTime(target)}, you can finish ${possible} people (${slack}).`;
+        } else {
+          peopleByTargetEl.textContent = '—';
+          targetSubEl.textContent = 'Target time must be after the start time.';
+        }
+      } else {
+        peopleByTargetEl.textContent = '—';
+        targetSubEl.textContent = 'Set a target end time to see capacity.';
+      }
+
+      // --- required pace to finish by target --- //
+      if (targetInput.value) {
+        const target = dateFromTime(targetInput.value, validStart ? start : new Date());
+        if (!isNaN(target.getTime()) && target > start && people > 0) {
+          const availableMinutes = (target.getTime() - start.getTime()) / 60000 - buffer;
+          if (availableMinutes <= 0) {
+            paceNeededEl.textContent = '—';
+            paceSubEl.textContent = 'Buffer eats all available time before the target.';
+            paceClockEl.textContent = '—';
+            paceClockSubEl.textContent = 'Not enough time before the target.';
+          } else {
+            const needed = availableMinutes / people;
+            paceNeededEl.textContent = needed.toFixed(2);
+            const compare = minutesPer > 0 ? `Current pace is ${minutesPer} min/person.` : '';
+            const warn = needed > 120 ? 'Unrealistic: over 2 hours per person.' : '';
+            paceSubEl.textContent = `Keep each person to ${needed.toFixed(2)} minutes to finish by ${formatDateTime(target)}. ${compare} ${warn}`.trim();
+            paceClockEl.textContent = formatClock(needed);
+            const currentClock = minutesPer > 0 ? formatClock(minutesPer) : '—';
+            paceClockSubEl.textContent = minutesPer > 0
+              ? `Current pace is ${currentClock}.`
+              : 'Set minutes per person to compare.';
+          }
+        } else if (!validStart) {
+          paceNeededEl.textContent = '—';
+          paceSubEl.textContent = 'Pick a start time first.';
+          paceClockEl.textContent = '—';
+          paceClockSubEl.textContent = 'Pick a start time first.';
+        } else if (people === 0) {
+          paceNeededEl.textContent = '—';
+          paceSubEl.textContent = 'Add at least one person.';
+          paceClockEl.textContent = '—';
+          paceClockSubEl.textContent = 'Add at least one person.';
+        } else {
+          paceNeededEl.textContent = '—';
+          paceSubEl.textContent = 'Target time must be after the start time.';
+          paceClockEl.textContent = '—';
+          paceClockSubEl.textContent = 'Target time must be after the start time.';
+        }
+      } else {
+        paceNeededEl.textContent = '—';
+        paceSubEl.textContent = 'Enter people + target time to see the required pace.';
+        paceClockEl.textContent = '—';
+        paceClockSubEl.textContent = 'Enter people + target time to see the required pace.';
+      }
+    }
+
+    function initDefaults() {
+      const now = new Date();
+      startInput.value = toTimeValue(now);
+      const target = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      targetInput.value = toTimeValue(target);
+      updateCalculations();
+    }
+
+    nowBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      startInput.value = toTimeValue(new Date());
+      updateCalculations();
+    });
+
+    [startInput, peopleInput, minutesInput, bufferInput, targetInput].forEach((el) => {
+      el.addEventListener('input', updateCalculations);
+    });
+    calcBtn.addEventListener('click', updateCalculations);
+
+    initDefaults();
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+  </script>
+</body>
+</html>
